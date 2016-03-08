@@ -1,0 +1,17 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  post:
+    - docker build -t million12/nexus .
+
+test:
+  override:
+    - docker run -d --name nexus -p 80:8081 million12/nexus
+    - docker logs -f nexus | tee -a ${CIRCLE_ARTIFACTS}/nexus.log:
+        background: true
+    - while true; do if grep "JettyServer - Started" -a ${CIRCLE_ARTIFACTS}/nexus.log; then break; else sleep 1; fi done
+    - sleep 5
+    # Check if web-interface accessible
+    - curl -s -L --head http://127.0.0.1/nexus | grep "HTTP/1.1 200 OK"
